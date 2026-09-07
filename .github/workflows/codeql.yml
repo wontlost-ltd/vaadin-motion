@@ -1,0 +1,65 @@
+# CodeQL 静态分析。
+#
+# 覆盖两种语言：java-kotlin（库本体与示例）与 javascript-typescript（连接器）。
+# 连接器同样重要——它随 jar 分发，在下游用户的浏览器里执行。
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 每周一次。新披露的漏洞规则不会因为代码没变就不适用，
+    # 定时扫描能在没有提交的时期发现新问题。
+    - cron: '31 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java 21
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      # 手动构建而非 autobuild：autobuild 会连示例应用一起构建，触发 Vaadin
+      # 的前端产线（下载 Node、跑 Vite），既慢又与分析无关。这里只编译库本体。
+      - name: Build library
+        if: matrix.language == 'java-kotlin'
+        run: mvn -B -ntp compile -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

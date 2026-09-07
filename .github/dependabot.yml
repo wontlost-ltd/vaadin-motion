@@ -1,0 +1,46 @@
+# 依赖更新。三套生态各自独立：Maven（库本体与示例）、npm（连接器与 E2E）、
+# GitHub Actions（工作流固定的 action 版本）。
+#
+# 分组提交而非逐个开 PR：这个项目的依赖多是同源的（Vaadin 全家桶、
+# Playwright 相关），拆开会产生大量互相冲突的 PR。
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      vaadin:
+        patterns:
+          - "com.vaadin:*"
+      test-deps:
+        patterns:
+          - "org.junit*"
+          - "org.mockito:*"
+
+  # 示例应用与库本体版本节奏不同，单独跟踪。
+  - package-ecosystem: maven
+    directory: /examples/motion-starter
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  # 连接器：anime.js 与 Lit 是运行时依赖，会随 jar 分发给下游。
+  - package-ecosystem: npm
+    directory: /src/main/resources/META-INF/frontend/vaadin-motion
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

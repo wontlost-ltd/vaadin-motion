@@ -31,6 +31,11 @@ env:
 jobs:
   docker-build-push:
     name: Build & push image
+    permissions:
+      contents: read
+      # cosign keyless 签名需要 OIDC token —— 签名与身份绑定到这个
+      # 工作流本身，而不是某把需要保管和轮换的私钥。
+      id-token: write
     # 必须是原生 ARM runner：镜像只构建 linux/arm64（目标集群是 ARM），
     # 而后面的校验与 smoke 步骤要在 runner 上真正把镜像跑起来。
     # 在 amd64 runner 上 docker create/run 会直接报
@@ -101,6 +106,20 @@ jobs:
             exit 1
           fi
           echo "production bundle 与 demo-sources 均已就位"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      # Keyless 签名：把「这个镜像由 wontlost-ltd/vaadin-motion 的
+      # release-demo.yml 构建」这一事实记入 Sigstore 公开透明日志。
+      # 无需保管私钥，验证方式：
+      #   cosign verify docker.io/wontlost/sentinel-ops@sha256:... \
+      #     --certificate-identity-regexp 'https://github.com/wontlost-ltd/vaadin-motion/.*' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Sign image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
 
       - name: Smoke test
         run: |

@@ -19,9 +19,54 @@ jobs:
           cache: maven
       - uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
       - name: Typecheck frontend
         working-directory: src/main/resources/META-INF/frontend/vaadin-motion
         run: npm ci && npm run typecheck
       - name: Build and test
         run: mvn -B -ntp clean verify
+
+  # E2E 独立成 job：需要先把示例应用打成生产包，比库本体的构建慢得多，
+  # 与上面的 build 并行跑可以省下等待时间。
+  #
+  # 这 106 个测试此前从不在 CI 运行——而 publish.yml 的发布门禁正是以
+  # 「CI 对该 commit 为绿」作为放行依据。门禁若只覆盖单元测试，等于对
+  # 运行时行为不设防。
+  e2e:
+    name: E2E (Chromium + Firefox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      # 先装库本体：示例应用依赖 com.wontlost:motion-vaadin，
+      # 且要测的正是本分支的代码，不能用 Central 上已发布的版本。
+      - name: Install library
+        run: mvn -B -ntp install -DskipTests
+
+      - name: Build demo (production)
+        run: mvn -B -ntp -f examples/motion-starter/pom.xml package -Pproduction -DskipTests
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: npm ci && npx playwright install --with-deps chromium firefox
+
+      - name: Run E2E
+        working-directory: e2e
+        run: npm test
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
