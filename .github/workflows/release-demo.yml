@@ -160,7 +160,11 @@ jobs:
           echo "--- kustomization.yaml after edit ---"
           cat kustomization.yaml
           echo "--- rendered image field ---"
-          kustomize build . | grep -E '^\s+image:' | head -3
+          # 渲染出的是 YAML 列表项「      - image: ...」，带 "- " 前缀，
+          # 所以不能用 '^\s+image:'（要求 image: 前只有空白）。这里也不让
+          # 预览左右 job 成败：set -euo pipefail 下 grep 无匹配会返回 1，
+          # 而一次显示失败不该阻断已经正确写入的 digest。
+          kustomize build . | grep -E 'image:' || echo "(未渲染出 image 行，请检查上面的 kustomization.yaml)"
 
       # k3s 仓库 main 受分支保护：要求经 PR 合并并通过 verify 检查，
       # 直推会被 GH013 拒绝。故推分支 + 开 PR，由对方仓库的检查决定何时合并。
