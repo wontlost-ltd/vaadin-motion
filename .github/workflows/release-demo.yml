@@ -31,7 +31,11 @@ env:
 jobs:
   docker-build-push:
     name: Build & push image
-    runs-on: ubuntu-latest
+    # 必须是原生 ARM runner：镜像只构建 linux/arm64（目标集群是 ARM），
+    # 而后面的校验与 smoke 步骤要在 runner 上真正把镜像跑起来。
+    # 在 amd64 runner 上 docker create/run 会直接报
+    # "no matching manifest for linux/amd64"。
+    runs-on: ubuntu-24.04-arm
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
       primary-tag: ${{ steps.meta.outputs.version }}
