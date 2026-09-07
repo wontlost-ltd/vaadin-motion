@@ -1,0 +1,5 @@
+Bundle-Name: VaadinMotion
+Bundle-SymbolicName: com.wontlost.vaadin-motion
+Export-Package: com.wontlost.motion
+Import-Package: *
+Vaadin-OSGi-Extender: true

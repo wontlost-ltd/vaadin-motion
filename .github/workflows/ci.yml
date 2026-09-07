@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Typecheck frontend
+        working-directory: src/main/resources/META-INF/frontend/vaadin-motion
+        run: npm ci && npm run typecheck
+      - name: Build and test
+        run: mvn -B -ntp clean verify

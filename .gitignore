@@ -1,0 +1,10 @@
+target/
+out/
+.idea/
+*.iml
+.vscode/
+node_modules/
+src/main/resources/META-INF/frontend/vaadin-motion/node_modules/
+.claude/
+.DS_Store
+*.log

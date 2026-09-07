@@ -1,0 +1,20 @@
+{
+  "name": "vaadin-motion",
+  "version": "1.0.0",
+  "description": "Restrained, server-driven motion for Vaadin Flow (anime.js v4)",
+  "engines": {
+    "node": ">=24"
+  },
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "animejs": "^4.5.0",
+    "lit": "^3.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
