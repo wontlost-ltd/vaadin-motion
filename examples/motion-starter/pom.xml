@@ -43,10 +43,16 @@
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
         </dependency>
+        <!-- 健康探针：Kubernetes 的 liveness/readiness 走 Actuator，
+             而不是打 Vaadin UI 路由——后者会触发一次完整的前端 bootstrap。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.wontlost</groupId>
             <artifactId>motion-vaadin</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>0.1.0</version>
         </dependency>
         <!-- Required for dev mode (mvn spring-boot:run): starts Vite and frontend hot reload.
              Not needed for production builds (-Pproduction), where the frontend is already

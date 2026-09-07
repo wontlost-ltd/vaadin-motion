@@ -1,0 +1,32 @@
+# 构建上下文精简。Dockerfile 位于 examples/motion-starter/，但上下文是仓库根目录
+# （example 依赖同仓库的 motion-vaadin），所以这里排除的是整个仓库的产物。
+#
+# node_modules 约 38MB，且含平台相关的二进制。Vaadin 会在构建期自行安装依赖，
+# 把宿主机的副本带进去只会拖慢上下文传输，还可能引入 macOS 的原生模块。
+
+**/node_modules/
+**/target/
+**/build/
+
+# Vaadin 生成物，每次构建都会重新产出
+**/src/main/bundles/
+**/src/main/frontend/generated/
+examples/motion-starter/package.json
+examples/motion-starter/package-lock.json
+examples/motion-starter/tsconfig.json
+examples/motion-starter/types.d.ts
+examples/motion-starter/vite.generated.ts
+
+# 与镜像无关
+.git/
+.github/
+.idea/
+e2e/
+docs/
+*.md
+!README.md
+.claude/
+.DS_Store
+*.log
+test-results/
+playwright-report/

@@ -1,0 +1,213 @@
+# 发布 Sentinel Ops 演示应用镜像并更新 GitOps 仓库。
+#
+# 与 addon 本身的发布（publish.yml，tag v*）分开：demo 是 examples/ 下的
+# 独立产物，改动频率和受众都不同——demo 的一次配色调整不该触发 Maven Central
+# 的不可撤回发布，反之亦然。因此这里用 demo-v* 前缀的 tag 触发。
+#
+# 流程：demo-v* tag -> 构建 arm64 镜像 -> 推 Docker Hub
+#       -> 向 wontlost-ltd/k3s 开 PR 回写 immutable digest
+#       -> 合并后 ArgoCD 自动同步到 https://sentinel-ops.wontlost.com
+name: Release demo image
+
+on:
+  push:
+    tags: ['demo-v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '镜像版本（如 0.1.0），不含 demo-v 前缀'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: wontlost/sentinel-ops
+  GITOPS_REPO: wontlost-ltd/k3s
+  GITOPS_PATH: apps/wontlost/sentinel-ops
+
+jobs:
+  docker-build-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      primary-tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # demo-v0.1.0 -> 0.1.0 / 0.1 / 0 / latest / sha-<short>
+          tags: |
+            type=match,pattern=demo-v(.*),group=1
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/demo-v') }}
+
+      - name: Build & push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          # 上下文是仓库根目录：example 依赖同仓库的 motion-vaadin，
+          # 需要先 install 本体再构建 example。
+          context: .
+          file: examples/motion-starter/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Verify Vaadin production bundle in jar
+        run: |
+          set -euo pipefail
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          # 运行时镜像是 alpine + jlink JRE，没有 jar 命令；把 jar 拷到
+          # runner 上用 unzip 检查（jar 本质是 zip）。
+          CID=$(docker create "${IMAGE}")
+          docker cp "${CID}:/app/app.jar" /tmp/app.jar
+          docker rm "${CID}" >/dev/null
+
+          # 生产 bundle 必须打进 jar，否则运行期会去找 Vite dev server 而失败。
+          if ! unzip -l /tmp/app.jar | grep -q 'META-INF/VAADIN/webapp/VAADIN/build/'; then
+            echo "::error::jar 内缺少 Vaadin production bundle —— 构建可能未走 -Pproduction"
+            exit 1
+          fi
+          # 代码片段面板在运行期读取这些源文件；缺失会让 Show code 退化成占位提示。
+          if ! unzip -l /tmp/app.jar | grep -q 'demo-sources/com/example/demo/QueuePanel.java'; then
+            echo "::error::jar 内缺少 demo-sources —— Show code 面板将无法显示真实源码"
+            exit 1
+          fi
+          echo "production bundle 与 demo-sources 均已就位"
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          docker run -d --name smoke-test -p 8090:8090 "${IMAGE}"
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:8090/actuator/health/readiness >/dev/null 2>&1; then
+              echo "readiness 通过（第 ${i} 次尝试）"
+              curl -fsS http://localhost:8090/ -o /dev/null -w '首页 HTTP %{http_code}\n'
+              docker rm -f smoke-test >/dev/null
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::容器在 200s 内未就绪"
+          docker logs smoke-test | tail -50
+          docker rm -f smoke-test >/dev/null
+          exit 1
+
+  update-gitops:
+    name: Update GitOps repo
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    steps:
+      # 该 App 在 k3s 仓库上需要 Contents: write（推分支）与
+      # Pull requests: write（开 PR）。缺少后者会在 gh pr create 处报 403。
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.K3S_GITHUB_APP_ID }}
+          private-key: ${{ secrets.K3S_GITHUB_APP_PRIVATE_KEY }}
+          owner: wontlost-ltd
+          repositories: k3s
+
+      - name: Checkout k3s repo
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          token: ${{ steps.app-token.outputs.token }}
+          path: k3s
+          fetch-depth: 1
+
+      - name: Install kustomize
+        run: |
+          set -euo pipefail
+          curl -sSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Set image digest
+        working-directory: k3s/apps/wontlost/sentinel-ops
+        run: |
+          set -euo pipefail
+          kustomize edit set image \
+            "${{ env.IMAGE_NAME }}=${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.primary-tag }}@${{ needs.docker-build-push.outputs.image-digest }}"
+          echo "--- kustomization.yaml after edit ---"
+          cat kustomization.yaml
+          echo "--- rendered image field ---"
+          kustomize build . | grep -E '^\s+image:' | head -3
+
+      # k3s 仓库 main 受分支保护：要求经 PR 合并并通过 verify 检查，
+      # 直推会被 GH013 拒绝。故推分支 + 开 PR，由对方仓库的检查决定何时合并。
+      - name: Commit & open PR
+        working-directory: k3s
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PRIMARY_TAG: ${{ needs.docker-build-push.outputs.primary-tag }}
+          IMAGE_DIGEST: ${{ needs.docker-build-push.outputs.image-digest }}
+        run: |
+          set -euo pipefail
+          git config user.name 'sentinel-ops-gitops[bot]'
+          git config user.email '${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+          if git diff --quiet; then
+            echo "镜像无变化，跳过"
+            exit 0
+          fi
+
+          # 分支名带上游 commit SHA + ref 名：同一 commit 可能被打多个 tag，
+          # 只用 SHA 会让这些 run 写到同一分支互相覆盖。
+          REF_SLUG=$(echo "${GITHUB_REF_NAME}" | tr -c 'a-zA-Z0-9._-' '-' | sed 's/-*$//')
+          BRANCH="sentinel-ops/bump-${GITHUB_SHA::7}-${REF_SLUG}"
+          git switch -c "${BRANCH}"
+
+          # 远端已有同名分支时才用带 lease 的强推：fetch-depth:1 下本地没有
+          # 对应的 remote-tracking ref，裸 --force-with-lease 会因缺 lease 基准被拒。
+          if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
+            git fetch --depth=1 origin "${BRANCH}"
+            PUSH_ARGS=(--force-with-lease="${BRANCH}:$(git rev-parse FETCH_HEAD)")
+          else
+            PUSH_ARGS=()
+          fi
+
+          MSG="chore(sentinel-ops): bump to ${PRIMARY_TAG}
+
+          Image: ${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}
+          Source: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          git add "${{ env.GITOPS_PATH }}/kustomization.yaml"
+          git commit -m "${MSG}"
+          git push "${PUSH_ARGS[@]}" origin "${BRANCH}"
+
+          if ! gh pr view "${BRANCH}" --repo "${{ env.GITOPS_REPO }}" >/dev/null 2>&1; then
+            gh pr create \
+              --repo "${{ env.GITOPS_REPO }}" \
+              --base main \
+              --head "${BRANCH}" \
+              --title "chore(sentinel-ops): bump to ${PRIMARY_TAG}" \
+              --body "自动生成：sentinel-ops 演示镜像升级。
+
+          - Image: \`${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}\`
+          - 上游 commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+
+          合并后 ArgoCD 会同步到 https://sentinel-ops.wontlost.com"
+          fi
