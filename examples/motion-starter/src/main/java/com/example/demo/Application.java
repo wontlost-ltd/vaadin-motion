@@ -1,6 +1,7 @@
 package com.example.demo;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
+import com.vaadin.flow.server.AppShellSettings;
 import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,5 +15,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application implements AppShellConfigurator {
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
+    }
+
+    @Override
+    public void configurePage(AppShellSettings settings) {
+        // 站点图标：SVG 优先（明暗都清晰），ICO 与 apple-touch-icon 兜底；文件在 META-INF/resources/icons
+        settings.addLink("icons/favicon.svg", java.util.Map.of("rel", "icon", "type", "image/svg+xml"));
+        settings.addFavIcon("icon", "icons/favicon.ico", "48x48");
+        settings.addFavIcon("apple-touch-icon", "icons/apple-touch-icon.png", "180x180");
     }
 }
