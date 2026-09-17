@@ -32,6 +32,7 @@ final class MetricsStrip extends HorizontalLayout {
     MetricsStrip() {
         setWidthFull();
         setSpacing(true);
+        addClassName("metrics-strip");
         open.setId("metric-open");
         sev1.setId("metric-sev1");
         users.setId("metric-users");
@@ -105,8 +106,9 @@ final class MetricsStrip extends HorizontalLayout {
         caption.getStyle().set("color", "var(--lumo-secondary-text-color)")
                 .set("font-size", "var(--lumo-font-size-s)");
         Div card = new Div(caption, value);
-        card.getStyle().set("flex", "1")
-                .set("padding", "var(--lumo-space-m)")
+        // 卡片的伸缩比例在主题样式表里（窄屏两列），这里只管内边距与底色
+        card.addClassName("metric-card");
+        card.getStyle().set("padding", "var(--lumo-space-m)")
                 .set("border-radius", "var(--lumo-border-radius-m)")
                 .set("background", "var(--lumo-contrast-5pct)");
         return card;

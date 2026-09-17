@@ -62,11 +62,11 @@ final class WarRoomPanel extends VerticalLayout {
                 .set("pointer-events", "none")
                 .set("top", "0").set("left", "0");
 
-        notes[0] = note("Hypothesis", "Cert expiry on fraud-check edge", "40px", "60px");
+        notes[0] = note("Hypothesis", "Cert expiry on fraud-check edge");
         notes[0].setId("note-hypothesis");
-        notes[1] = note("Evidence", "TLS handshake failures in edge logs", "40px", "360px");
+        notes[1] = note("Evidence", "TLS handshake failures in edge logs");
         notes[1].setId("note-evidence");
-        notes[2] = note("Action", "Rotate cert, remove bypass", "220px", "200px");
+        notes[2] = note("Action", "Rotate cert, remove bypass");
         notes[2].setId("note-action");
 
         board.add(focus, notes[0], notes[1], notes[2]);
@@ -117,7 +117,8 @@ final class WarRoomPanel extends VerticalLayout {
         }
     }
 
-    private static Div note(String kind, String text, String top, String left) {
+    /** 便签的初始位置与宽度在主题样式表里按 id 给出（窄屏另一套），拖动后由客户端接管。 */
+    private static Div note(String kind, String text) {
         Span k = new Span(kind);
         k.getStyle().set("font-size", "var(--lumo-font-size-s)")
                 .set("color", "var(--lumo-primary-color)")
@@ -127,9 +128,8 @@ final class WarRoomPanel extends VerticalLayout {
         t.getStyle().set("font-size", "var(--lumo-font-size-s)");
 
         Div n = new Div(k, t);
+        n.addClassName("war-note");
         n.getStyle().set("position", "absolute")
-                .set("top", top).set("left", left)
-                .set("width", "220px")
                 .set("padding", "var(--lumo-space-s) var(--lumo-space-m)")
                 .set("border-radius", "var(--lumo-border-radius-m)")
                 .set("background", "var(--lumo-base-color)")

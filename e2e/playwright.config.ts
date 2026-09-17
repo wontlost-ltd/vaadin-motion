@@ -29,7 +29,9 @@ export default defineConfig({
         stderr: 'pipe',
     },
     projects: [
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-        { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /mobile\.spec\.ts/ },
+        { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testIgnore: /mobile\.spec\.ts/ },
+        // Phone viewport (Pixel 5 on Chromium, so CI needs no WebKit) runs only mobile.spec; the other suites measure the desktop layout.
+        { name: 'mobile', use: { ...devices['Pixel 5'] }, testMatch: /mobile\.spec\.ts/ },
     ],
 });

@@ -96,10 +96,13 @@ final class QueuePanel extends VerticalLayout {
                 .set("border", "1px dashed var(--lumo-contrast-20pct)")
                 .set("border-radius", "var(--lumo-border-radius-m)");
 
+        // 表头与列表放进一个可横向滚动的容器：七列在手机上放不下，整表滚动比折列更保真
+        Div table = new Div(columnHeader(), list);
+        table.addClassName("queue-table");
         add(header(),
                 new CodePeek("QueuePanel.java", "queue", "queue code"),
                 new CodePeek("MetricsStrip.java", "metrics", "metrics code"),
-                columnHeader(), list, emptyHint);
+                table, emptyHint);
         rebuild();
 
         // Bind FLIP once. From here on the panel simply reorders data and the client tweens.
@@ -144,6 +147,7 @@ final class QueuePanel extends VerticalLayout {
     /** Column captions, so the table says what each column is rather than relying on inference. */
     private Component columnHeader() {
         Div head = new Div();
+        head.addClassName("queue-row");
         head.getStyle().set("display", "grid")
                 .set("grid-template-columns", COLUMNS)
                 .set("gap", "var(--lumo-space-m)")
@@ -279,6 +283,7 @@ final class QueuePanel extends VerticalLayout {
                 .set("font-size", "var(--lumo-font-size-s)");
 
         Div rowEl = new Div();
+        rowEl.addClassName("queue-row");
         rowEl.getStyle().set("display", "grid")
                 .set("grid-template-columns", COLUMNS)
                 .set("box-sizing", "border-box")

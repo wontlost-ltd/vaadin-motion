@@ -183,8 +183,9 @@ final class PostmortemPanel extends VerticalLayout {
         // a staircase. Fixed tracks make time and headline line up down the column, and the
         // entry fills the available width.
         Div box = new Div(t, h, d);
+        // 列轨道在主题样式表里（窄屏两列，说明另起一行）
+        box.addClassName("pm-entry");
         box.getStyle().set("display", "grid")
-                .set("grid-template-columns", "60px 190px minmax(0, 1fr)")
                 .set("gap", "var(--lumo-space-m)")
                 .set("align-items", "baseline")
                 .set("width", "100%")

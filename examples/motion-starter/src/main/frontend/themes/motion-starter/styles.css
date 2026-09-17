@@ -1,1 +1,79 @@
-/* Theme entry point: all styling comes from Lumo; nothing is overridden here. */
+/*
+ * Theme entry point. Colours, type and spacing all come from Lumo; this file only holds the
+ * few layout rules that need a media query: the console is a dense desktop surface, and the
+ * pieces below are the ones that do not fit a phone as they are.
+ */
+
+/* Metrics strip: four cards in a row, two per row on a phone. */
+.metrics-strip {
+  flex-wrap: wrap;
+}
+.metric-card {
+  flex: 1 1 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Incident queue: the seven-column grid keeps its tracks; the table scrolls sideways when the
+   viewport is narrower than the tracks. */
+.queue-table {
+  width: 100%;
+  overflow-x: auto;
+}
+.queue-row {
+  min-width: 100%;
+}
+
+/* Postmortem timeline: time | headline | detail. */
+.pm-entry {
+  grid-template-columns: 60px 190px minmax(0, 1fr);
+}
+
+/* War room notes: initial positions and width. Dragging moves them by transform, so these
+   only decide where they start. */
+.war-note {
+  width: 220px;
+}
+#note-hypothesis {
+  top: 40px;
+  left: 60px;
+}
+#note-evidence {
+  top: 40px;
+  left: 360px;
+}
+#note-action {
+  top: 220px;
+  left: 200px;
+}
+
+/* Topology graph: the SVG has a viewBox, so it scales with the column instead of overflowing. */
+#topology-graph {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 700px) {
+  .metric-card {
+    flex: 1 1 40%;
+  }
+  .queue-row {
+    min-width: 720px;
+  }
+  .pm-entry {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+  .pm-entry > :last-child {
+    grid-column: 2;
+  }
+  .war-note {
+    width: 150px;
+  }
+  #note-evidence {
+    left: 200px;
+  }
+  #note-action {
+    top: 200px;
+    left: 100px;
+  }
+}
