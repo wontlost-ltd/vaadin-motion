@@ -138,7 +138,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.3.1</version>
+                        <version>3.4.0</version>
                         <!--
                             source-plugin has its own excludes and does not inherit the
                             jar-plugin's. Without these, a local build (where node_modules
