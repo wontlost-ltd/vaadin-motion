@@ -2,6 +2,7 @@
 
 ## 0.1.0 (unreleased)
 
+- Vaadin Platform 25.2.6 → 25.3.0.
 - `Motion.enter` / `Motion.exit` / `Motion.remove` — exit animations that actually play before Flow detaches the element.
 - `Motion.stagger` — one-line staggered entrance for a layout's children.
 - `Motion.timeline` — fluent cross-component sequencing with a server-side completion callback.
