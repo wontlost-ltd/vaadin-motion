@@ -51,7 +51,7 @@ implementation("com.wontlost:motion-vaadin:0.1.0")
 
 | Dependency | Version | Notes |
 |---|---|---|
-| Vaadin Platform | 25.2.6+ | 25.x series |
+| Vaadin Platform | 25.3.0+ | 25.x series |
 | Java | 21+ | Vaadin 25 baseline |
 | anime.js | `^4.5.0` | pulled in via `@NpmPackage` |
 | Lit | `^3.3.3` | pulled in via `@NpmPackage` |

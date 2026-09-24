@@ -2,6 +2,14 @@
 
 ## 0.1.0 (unreleased)
 
+- Vaadin Platform 25.2.6 → 25.3.0。
+- JUnit 6.0.3 → **6.1.3**，并显式 import `junit-bom`（置于 `vaadin-bom` 之前）。
+  此前只在依赖声明处写 `junit-jupiter` 的版本是不够的：`vaadin-bom` 会传递管理
+  `junit-jupiter-api` 的版本，导致升级时只有 `engine`/`params` 跟进，而 `api`、
+  `platform-commons`、`platform-launcher` 仍停在旧版；surefire 在 fork 进程中
+  检测到 JUnit jar 版本不一致，直接 `NoClassDefFoundError` 且一个测试都跑不起来
+  （`Tests run: 0` + `BUILD FAILURE`）。改用 BOM 统一管理后六个 JUnit 构件版本一致。
+  注意该失败只在 `mvn verify` 下暴露，`mvn test` 不会触发。
 - `Motion.enter` / `Motion.exit` / `Motion.remove` — exit animations that actually play before Flow detaches the element.
 - `Motion.stagger` — one-line staggered entrance for a layout's children.
 - `Motion.timeline` — fluent cross-component sequencing with a server-side completion callback.
