@@ -187,7 +187,7 @@ const log = {
 export class VaadinMotion extends LitElement {
 
     /** Keep in sync with MotionHost.VERSION */
-    static readonly version = '0.1.0';
+    static readonly version = '0.1.1';
 
     @property({ type: Boolean }) respectReducedMotion = true;
 

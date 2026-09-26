@@ -52,7 +52,7 @@
         <dependency>
             <groupId>com.wontlost</groupId>
             <artifactId>motion-vaadin</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.1</version>
         </dependency>
         <!-- Required for dev mode (mvn spring-boot:run): starts Vite and frontend hot reload.
              Not needed for production builds (-Pproduction), where the frontend is already
