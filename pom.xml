@@ -6,7 +6,7 @@
     <groupId>com.wontlost</groupId>
     <artifactId>motion-vaadin</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <name>MotionVaadin</name>
     <description>Restrained, server-driven motion for Vaadin Flow, powered by anime.js v4</description>
     <url>https://github.com/wontlost-ltd/vaadin-motion</url>

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.1 (2026-09-27)
 
 - Vaadin Platform 25.2.6 → 25.3.0。
 - JUnit 6.0.3 → **6.1.3**，并显式 import `junit-bom`（置于 `vaadin-bom` 之前）。
@@ -10,6 +10,9 @@
   检测到 JUnit jar 版本不一致，直接 `NoClassDefFoundError` 且一个测试都跑不起来
   （`Tests run: 0` + `BUILD FAILURE`）。改用 BOM 统一管理后六个 JUnit 构件版本一致。
   注意该失败只在 `mvn verify` 下暴露，`mvn test` 不会触发。
+
+## 0.1.0 (2026-09-07)
+
 - `Motion.enter` / `Motion.exit` / `Motion.remove` — exit animations that actually play before Flow detaches the element.
 - `Motion.stagger` — one-line staggered entrance for a layout's children.
 - `Motion.timeline` — fluent cross-component sequencing with a server-side completion callback.
