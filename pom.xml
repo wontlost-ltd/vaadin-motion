@@ -16,7 +16,7 @@
         <developerConnection>scm:git:git@github.com:wontlost-ltd/vaadin-motion.git</developerConnection>
     </scm>
     <properties>
-        <vaadin.version>25.3.0</vaadin.version>
+        <vaadin.version>25.3.1</vaadin.version>
         <!--
             JUnit 版本基线。必须显式 import junit-bom，且置于 vaadin-bom 之前：
             vaadin-bom 会传递管理 junit-jupiter-api 的版本，若不覆盖，升级
